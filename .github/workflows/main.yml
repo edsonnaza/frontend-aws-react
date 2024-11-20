@@ -37,4 +37,4 @@ jobs:
 
       # 6. Deploy to S3 bucket
       - name: Deploy to AWS S3 Bucket
-        run: aws s3 sync build/ s3://edson-image-original-2024 --delete
+        run: aws s3 sync ./ s3://edson-image-original-2024 --delete
