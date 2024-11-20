@@ -30,4 +30,4 @@ jobs:
                 aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
                 aws-region: sa-east-1
             - name: Deploy to AWS S3 Bucket
-              run: aws S3 sync build s3://edson-image-resizer-react-app --delete
+              run: aws S3 sync build s3://edson-image-resizer-react-app --delete --debug
