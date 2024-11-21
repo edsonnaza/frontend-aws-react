@@ -19,15 +19,14 @@ jobs:
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_version: 1.7.5
+      
 
     - name: Terraform Init
       run: terraform init
       working-directory: ./terraform
 
     - name: Terraform Plan
-      run: |
+      run: 
         terraform plan -out=tfplan
         terraform show -no-color tfplan > plan.txt
       id: plan
@@ -82,7 +81,7 @@ jobs:
       working-directory: ./terraform
 
     - name: Terraform Apply
-      run: terraform apply "tfplan"
+      run: terraform apply -auto-approve -input=false
       working-directory: ./terraform
 
   deploy:
@@ -92,7 +91,7 @@ jobs:
     steps:
       # 1. Checkout the code
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/setup-node@v4
 
       # 2. Setup Node.js
       - name: Node.js Setup
