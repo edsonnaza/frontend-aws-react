@@ -1,11 +1,92 @@
-name: Deploy to AWS S3 Bucket
+name: 'Terraform Plan, Apply, and Deploy to AWS S3'
+
 on:
   push:
     branches:
       - main
 
 jobs:
+  plan:
+    name: 'Terraform Plan'
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 1.7.5
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform
+
+    - name: Terraform Plan
+      run: |
+        terraform plan -out=tfplan
+        terraform show -no-color tfplan > plan.txt
+      id: plan
+      working-directory: ./terraform
+
+    - name: Upload Terraform Plan
+      uses: actions/upload-artifact@v2
+      with:
+        name: terraform-plan
+        path: ./terraform/tfplan
+
+    - name: Upload Terraform Plan Text
+      uses: actions/upload-artifact@v2
+      with:
+        name: terraform-plan-text
+        path: ./terraform/plan.txt
+
+  apply:
+    needs: plan
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 1.7.5
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform
+
+    - name: Download Terraform Plan
+      uses: actions/download-artifact@v2
+      with:
+        name: terraform-plan
+        path: ./terraform
+
+    - name: Download Terraform Plan Text
+      uses: actions/download-artifact@v2
+      with:
+        name: terraform-plan-text
+        path: ./terraform
+
+    - name: List Files in terraform directory
+      run: ls -R
+      working-directory: ./terraform
+
+    - name: Terraform Apply
+      run: terraform apply "tfplan"
+      working-directory: ./terraform
+
   deploy:
+    needs: apply
     runs-on: ubuntu-latest
 
     steps:
@@ -17,7 +98,7 @@ jobs:
       - name: Node.js Setup
         uses: actions/setup-node@v3
         with:
-          node-version: ${{secrets.node_version}}  
+          node-version: ${{ secrets.node_version }}  
 
       # 3. Install dependencies
       - name: Install Dependencies
@@ -37,4 +118,4 @@ jobs:
 
       # 6. Deploy to S3 bucket
       - name: Deploy to AWS S3 Bucket
-        run: aws s3 sync ./dist s3://edson-image-original-2024 --delete
+        run: aws s3 sync ./dist s3://edson-image-original-2024-unique --delete
